@@ -444,6 +444,26 @@ def main():
         st.caption(
             "This simplified demo rule can encourage strategic bidding because the declared maximum affects both priority and price. It is a research assumption, not a confirmed Tata market rule."
         )
+    with st.expander("Where could an LLM help?"):
+        st.markdown("**No LLM is used in this demo.** The roles below are proposed extensions.")
+        st.markdown(
+            "**1. Set preferences.** Translate requests such as ‘Keep enough energy for tonight and sell the rest above INR 6/kWh’ into structured settings, asking what ‘enough’ means. Code validates the settings and permissions."
+        )
+        st.markdown(
+            "**2. Plan an offer or bid.** Interpret context, such as an upcoming EV trip, and propose a strategy using forecasting or optimization tools. Code checks energy availability, reserves, prices and budgets."
+        )
+        st.markdown(
+            "**3. Coordinate before commitment.** Interpret other agents’ flexibility and propose revised quantities or prices. An REP-based extension could be explored here; REP and back-and-forth bargaining are not implemented in this demo. Hard constraints still govern every commitment."
+        )
+        st.markdown(
+            "**4. Explain the result.** Answer questions such as ‘Why did B1 get no energy?’ using the recorded trades and events. The explanation must match the simulation’s actual numbers."
+        )
+        st.caption(
+            "Matching, meter readings, payment reservation and settlement do not inherently need an LLM. Forecasting and optimization calculate feasible actions; an LLM must not bypass hard constraints."
+        )
+        st.caption(
+            "Proposed first steps: natural-language preferences and trace-grounded explanations. LLM trading strategies would be evaluated later against rule-based and optimization baselines."
+        )
     with st.expander("About this research"):
         st.write(
             "Proposed MIT × Tata Power consumer-agent research: how can households respect preferences and coordinate under uncertainty? This demo uses deterministic offers and midpoint matching, without iterative price bargaining."
