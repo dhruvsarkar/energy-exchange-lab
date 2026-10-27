@@ -1,0 +1,142 @@
+{
+  "name": "energy_p2p_normal",
+  "description": "Synthetic energy P2P: normal",
+  "seed": 42,
+  "validator": "energy_p2p",
+  "plugin_files": [
+    "energy_plugin.py"
+  ],
+  "agents": [
+    {
+      "name": "S1",
+      "role": "energy_household",
+      "config": {
+        "policy": {
+          "forecast_surplus": 5,
+          "reserve": 1,
+          "min_price": 5,
+          "role": "seller"
+        }
+      }
+    },
+    {
+      "name": "S2",
+      "role": "energy_household",
+      "config": {
+        "policy": {
+          "forecast_surplus": 4,
+          "reserve": 1,
+          "min_price": 5.5,
+          "role": "seller"
+        }
+      }
+    },
+    {
+      "name": "S3",
+      "role": "energy_household",
+      "config": {
+        "policy": {
+          "forecast_surplus": 3,
+          "reserve": 1,
+          "min_price": 6,
+          "role": "seller"
+        }
+      }
+    },
+    {
+      "name": "B1",
+      "role": "energy_household",
+      "config": {
+        "policy": {
+          "demand": 3,
+          "max_price": 7,
+          "budget": 30,
+          "role": "buyer"
+        },
+        "balance_cents": 3000
+      }
+    },
+    {
+      "name": "B2",
+      "role": "energy_household",
+      "config": {
+        "policy": {
+          "demand": 4,
+          "max_price": 7.5,
+          "budget": 40,
+          "role": "buyer"
+        },
+        "balance_cents": 4000
+      }
+    },
+    {
+      "name": "B3",
+      "role": "energy_household",
+      "config": {
+        "policy": {
+          "demand": 2,
+          "max_price": 8,
+          "budget": 25,
+          "role": "buyer"
+        },
+        "balance_cents": 2500
+      }
+    },
+    {
+      "name": "market",
+      "role": "energy_market",
+      "config": {
+        "participants": [
+          "S1",
+          "S2",
+          "S3",
+          "B1",
+          "B2",
+          "B3"
+        ],
+        "missing_meter_policy": "pending"
+      }
+    },
+    {
+      "name": "utility",
+      "role": "energy_utility",
+      "config": {
+        "cap_kwh": 99
+      }
+    },
+    {
+      "name": "meter",
+      "role": "energy_meter",
+      "config": {
+        "readings": {
+          "S1": {
+            "kwh": 4,
+            "quality": "valid"
+          },
+          "S2": {
+            "kwh": 3,
+            "quality": "valid"
+          },
+          "S3": {
+            "kwh": 2,
+            "quality": "valid"
+          },
+          "B1": {
+            "kwh": 3,
+            "quality": "valid"
+          },
+          "B2": {
+            "kwh": 4,
+            "quality": "valid"
+          },
+          "B3": {
+            "kwh": 2,
+            "quality": "valid"
+          }
+        },
+        "delay": 1
+      }
+    }
+  ],
+  "max_time": 20
+}
