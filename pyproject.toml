@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tata-energy-testbed"
+version = "0.1.0"
+description = "Synthetic Nandatown energy P2P research scenario"
+requires-python = ">=3.11"
+dependencies = [
+  "nandatown @ git+https://github.com/projnanda/nandatown.git@b7adc6121868742cf0f00cfebbf2d38bdb349057",
+  "fastapi>=0.110", "uvicorn>=0.29", "pydantic>=2.6"
+]
+
+[project.scripts]
+energy-p2p = "src.energy_exchange.run:main"
+energy-serve = "src.energy_exchange.server:main"
+
+[tool.setuptools.packages.find]
+include = ["src", "src.*"]
+
+[tool.setuptools.package-data]
+"src.energy_exchange" = ["web/*.html", "web/*.css", "web/*.js"]
