@@ -124,6 +124,10 @@ def controls():
                 if group == "sellers"
                 else "The budget covers P2P purchases. Residual consumption can be supplied by the grid in the cost comparison."
             )
+            if group == "buyers":
+                st.caption(
+                    "A higher maximum price gives earlier access to sellers, but also raises the price for the same seller. It does not guarantee cheaper energy. See ‘How bids affect priority and price’ below the network."
+                )
             for i in range(1, 4):
                 name = ("S" if group == "sellers" else "B") + str(i)
                 with st.container():
@@ -427,6 +431,19 @@ def main():
     else:
         st.iframe(network_html(), height="content", alt="Energy network replay")
         st.caption("Choose a scenario in the sidebar and select Run simulation.")
+    with st.expander("How bids affect priority and price"):
+        st.write(
+            "Buyers with higher maximum prices go first and choose from the cheapest eligible sellers. That can give them earlier access to low-cost supply."
+        )
+        st.write(
+            "The trade price is halfway between the seller’s minimum and the buyer’s maximum. If a seller asks INR 5/kWh, a buyer maximum of INR 8 gives a price of INR 6.50; a maximum of INR 7 gives INR 6.00—if supply remains when that buyer’s turn arrives."
+        )
+        st.markdown(
+            "**A higher maximum improves priority, but does not guarantee cheaper electricity.**"
+        )
+        st.caption(
+            "This simplified demo rule can encourage strategic bidding because the declared maximum affects both priority and price. It is a research assumption, not a confirmed Tata market rule."
+        )
     with st.expander("About this research"):
         st.write(
             "Proposed MIT × Tata Power consumer-agent research: how can households respect preferences and coordinate under uncertainty? This demo uses deterministic offers and midpoint matching, without iterative price bargaining."
