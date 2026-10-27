@@ -168,6 +168,92 @@ def controls():
     return payload
 
 
+def render_input_changes(payload, latest):
+    """Compare the visitor's current settings with the normal scenario."""
+    baseline = presets()["normal"]
+    changes = []
+    meter_changes = []
+    fields = {
+        "forecast_surplus": ("Forecast surplus", "kWh"),
+        "reserve": ("Keep in reserve", "kWh"),
+        "min_price": ("Minimum selling price", "INR/kWh"),
+        "demand": ("Expected demand", "kWh"),
+        "max_price": ("Maximum buying price", "INR/kWh"),
+        "budget": ("Spending limit", "INR"),
+    }
+
+    def add(name, label, before, after, unit):
+        if before != after:
+            changes.append(
+                {
+                    "Agent / setting": f"{name} · {label}",
+                    "Normal trading": f"{before:g} {unit}",
+                    "Current settings": f"{after:g} {unit}",
+                }
+            )
+
+    def reading(value):
+        return "missing" if value is None else f"{value:g} kWh"
+
+    for group in ("sellers", "buyers"):
+        originals = {p["name"]: p for p in baseline[group]}
+        for person in payload[group]:
+            name = person["name"]
+            original = originals[name]
+            for field, (label, unit) in fields.items():
+                if field in person:
+                    add(name, label, original[field], person[field], unit)
+            if group == "sellers":
+                add(
+                    name,
+                    "Energy offered",
+                    max(0, original["forecast_surplus"] - original["reserve"]),
+                    max(0, person["forecast_surplus"] - person["reserve"]),
+                    "kWh",
+                )
+            field = "actual_export" if group == "sellers" else "actual_import"
+            if original[field] != person[field]:
+                meter_changes.append(
+                    f"{name} {field.replace('_', ' ')}: "
+                    f"{reading(original[field])} → {reading(person[field])}"
+                )
+    add(
+        "Utility",
+        "Trading cap",
+        baseline["utility_cap_kwh"],
+        payload["utility_cap_kwh"],
+        "kWh",
+    )
+    add(
+        "Comparison",
+        "Grid tariff",
+        baseline["grid_tariff"],
+        payload["grid_tariff"],
+        "INR/kWh",
+    )
+    policy_changed = payload["missing_meter_policy"] != baseline["missing_meter_policy"]
+    if not changes and not meter_changes and not policy_changed:
+        return
+    st.markdown("**What changed from normal trading?**")
+    st.caption(
+        "Current settings · reflected in the replay below."
+        if latest and payload == latest["inputs"]
+        else "Current settings · run the simulation to see their effect."
+    )
+    if changes:
+        st.dataframe(changes, hide_index=True, width="stretch")
+    if meter_changes:
+        st.caption(
+            "Separate simulated meter settings: "
+            + "; ".join(meter_changes)
+            + ". Agents receive these readings only after commitment."
+        )
+    if policy_changed:
+        st.caption(
+            "Missing-meter rule: pending → " + payload["missing_meter_policy"] + "."
+        )
+
+
 def narrative(run):
     r = run["result"]
     pending = sum(t["status"] == "pending" for t in r["trades"])
@@ -308,6 +394,7 @@ def main():
     with st.sidebar:
         payload = controls()
     latest = st.session_state.get("latest")
+    render_input_changes(payload, latest)
     if latest and payload != latest["inputs"]:
         st.warning("You have unrun changes. Run simulation to update this replay.")
     if st.sidebar.button("Run simulation", type="primary", use_container_width=True):
