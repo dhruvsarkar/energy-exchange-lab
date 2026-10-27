@@ -61,3 +61,11 @@ results, presets/reset, missing meters, session isolation, lifecycle navigation,
 download controls and error recovery. Backend tests verify native execution,
 input validation, cleanup, and concurrency. Remote deployment is complete only
 once the hosted URL has been opened and a fresh simulation has succeeded.
+
+## Network replay
+
+Select a scenario in the sidebar and Run simulation. Play or step through the
+recorded offers, checks, commitments and settlements. Click a node to inspect
+its rules; click a trade to highlight it. Detailed inputs, results and evidence
+are expandable. The graph represents logical exchanges, not physical power
+lines. The current agents use deterministic policies without price bargaining.
