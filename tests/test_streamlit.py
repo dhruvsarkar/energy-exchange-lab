@@ -57,11 +57,10 @@ class StreamlitTests(unittest.TestCase):
     def test_replay_and_downloads_do_not_execute_again(self):
         app = self.app()
         result = self.run_simulation(app)
-        app.radio[0].set_value("Observe").run()
+        app.run()
         self.assertEqual(app.session_state.latest["run_id"], result["run_id"])
-        self.assertTrue(
-            all(row == "energy_observe" for row in app.dataframe[0].value["Event"])
-        )
+        self.assertEqual(len(app.get("iframe")), 1)
+        self.assertEqual(len(app.sidebar.number_input), 26)
         self.assertEqual(len(app.get("download_button")), 6)
         self.assertNotIn("/Users/", str(result))
 
