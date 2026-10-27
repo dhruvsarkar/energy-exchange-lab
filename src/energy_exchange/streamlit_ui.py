@@ -444,6 +444,28 @@ def main():
         st.caption(
             "This simplified demo rule can encourage strategic bidding because the declared maximum affects both priority and price. It is a research assumption, not a confirmed Tata market rule."
         )
+    with st.expander("Why think about mechanism design?"):
+        st.markdown(
+            "**Strategic bidding means choosing a bid to benefit from the market’s rules, rather than simply reporting your true willingness to pay.** It can be rational behavior; it is not automatically dishonest."
+        )
+        st.write(
+            "Example: in Normal trading, suppose B3 truly values energy at INR 8/kWh. With everyone else’s bids unchanged, declaring INR 7.60 still puts B3 ahead of B2’s INR 7.50. Against S1’s INR 5 minimum, B3 pays INR 6.30 instead of INR 6.50 per kWh—saving INR 0.40 on the same 2 kWh. This is bid shading."
+        )
+        st.markdown(
+            "**Why it matters:** submitted bids may not reveal real preferences. Strategic behavior can prevent useful trades or favor sophisticated bidders. An agent’s apparent improvement could come from exploiting the pricing rule rather than managing energy better. These are risks to test, not outcomes established by this demo."
+        )
+        st.write(
+            "Mechanism design asks how matching and payment rules can make self-interested choices produce useful market outcomes. One goal is incentive compatibility: making truthful reporting a good strategy under stated assumptions."
+        )
+        st.caption(
+            "Research next step: separate private preferences, the agent’s submitted bid, and market rules. Compare incentives, trade volume, household benefits, fairness and whether payments cover payouts. Truthful incentives, efficiency and budget balance involve trade-offs. This demo does not yet model private values separately or compare alternative mechanisms."
+        )
+        st.markdown(
+            "**Before adding smarter LLM traders, test the rules they would be optimizing against.**"
+        )
+        st.caption(
+            "Background: [mechanism design and incentives](https://www.nobelprize.org/uploads/2018/06/advanced-economicsciences2007.pdf) · [buyer–seller auction design](https://theory.stanford.edu/~italgam/papers/Modular%20Double%20Auctions.pdf)"
+        )
     with st.expander("Where could an LLM help?"):
         st.markdown("**No LLM is used in this demo.** The roles below are proposed extensions.")
         st.markdown(
