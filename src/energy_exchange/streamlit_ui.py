@@ -10,6 +10,7 @@ import streamlit as st
 from pydantic import ValidationError
 
 from .interactive import RunInput, presets
+from .network import network_html
 from .server import MAX_CONCURRENT, MAX_PER_MINUTE, run_worker
 
 TITLES = {
@@ -23,32 +24,6 @@ DESCRIPTIONS = {
     "cloud": "A cloud reduces S1's actual export after its forecast-based offer. Compare commitment with settlement.",
     "utility_limit": "The utility allows at most 5 kWh of trading. Approval happens before commitment.",
     "preference_change": "S1 keeps a larger reserve and raises its minimum selling price. Both preferences constrain its offer.",
-}
-STAGES = {
-    "Observe": (
-        "energy_observe",
-        "Households observe forecasts and preferences. Actual meter readings are withheld from their policies.",
-    ),
-    "Propose": (
-        "energy_proposal",
-        "Sellers offer surplus minus reserve. Buyers submit demand, price ceilings and budgets. No commitment exists yet.",
-    ),
-    "Validate": (
-        "energy_validation",
-        "The utility applies the aggregate trading cap. This is not electrical network feasibility.",
-    ),
-    "Commit": (
-        "energy_commitment",
-        "Buyer payment is reserved before commitments are recorded. Promised energy is not measured delivery.",
-    ),
-    "Meter": (
-        "energy_meter",
-        "The meter role now reveals import/export readings. Missing readings cannot support settlement.",
-    ),
-    "Settle": (
-        "energy_result",
-        "Valid readings limit settlement in commitment order. Unused payment is released; missing readings follow the selected policy.",
-    ),
 }
 
 
@@ -112,7 +87,7 @@ def number(label, key, maximum=1000.0, optional=False):
 
 
 def controls():
-    st.subheader("Set the conditions")
+    st.subheader("Experiment")
     st.selectbox(
         "Starting scenario",
         list(TITLES),
@@ -143,15 +118,15 @@ def controls():
             ],
         ),
     ):
-        with st.expander(heading, expanded=True):
+        with st.expander(heading):
             st.caption(
                 "Surplus is after expected household use; reserve further reduces the offer."
                 if group == "sellers"
                 else "The budget covers P2P purchases. Residual consumption can be supplied by the grid in the cost comparison."
             )
-            for i, column in enumerate(st.columns(3), 1):
+            for i in range(1, 4):
                 name = ("S" if group == "sellers" else "B") + str(i)
-                with column:
+                with st.container():
                     st.markdown(f"**{name}**")
                     person = {"name": name}
                     for field, label, maximum in fields:
@@ -159,12 +134,10 @@ def controls():
                             f"{name} · {label}", f"{name}_{field}", maximum
                         )
                     payload[group].append(person)
-    left, right = st.columns(2)
-    with left:
+    with st.expander("Utility & tariff"):
         payload["utility_cap_kwh"] = number(
             "Aggregate trading cap (kWh)", "utility_cap_kwh"
         )
-    with right:
         payload["grid_tariff"] = number(
             "Grid comparison tariff (INR/kWh)", "grid_tariff", 100.0
         )
@@ -172,8 +145,8 @@ def controls():
         st.caption(
             "These values define the experiment's realized outcome, not the forecast. Agents see them only after commitment. Clear a reading to simulate missing data."
         )
-        for group, column in zip(("sellers", "buyers"), st.columns(2)):
-            with column:
+        for group in ("sellers", "buyers"):
+            with st.container():
                 field = "actual_export" if group == "sellers" else "actual_import"
                 for person in payload[group]:
                     name = person["name"]
@@ -219,13 +192,8 @@ def narrative(run):
 
 
 def render_results(run):
-    st.divider()
-    st.subheader("Simulation results")
-    st.success("Run evidence verified")
-    st.caption(
-        f"{run['run_id']} · Fresh Nandatown simulation · {run['metrics']['message_count']} messages"
-    )
-    st.write(narrative(run))
+    st.iframe(network_html(run), height="content", alt="Energy network replay")
+    st.caption(f"Completed run · {run['run_id']} · Evidence verified")
     previous = st.session_state.get("previous")
     for col, (key, label, unit) in zip(
         st.columns(4),
@@ -246,32 +214,8 @@ def render_results(run):
         )
     if previous:
         st.caption(f"Deltas compare with your previous run: {previous['run_id']}.")
-    replay, ledger, evidence = st.tabs(
-        ["Lifecycle & messages", "Trades & household outcomes", "Evidence & downloads"]
-    )
-    with replay:
-        stage = st.radio("Lifecycle stage", list(STAGES), index=5, horizontal=True)
-        kind, explanation = STAGES[stage]
-        st.write(explanation)
-        end = max(
-            (i for i, event in enumerate(run["events"]) if event["kind"] == kind),
-            default=-1,
-        )
-        rows = [
-            {
-                "Time": e["at"],
-                "Agent": e["observer"],
-                "Event": e["kind"],
-                "Details": json.dumps(e["detail"]),
-            }
-            for e in run["events"][: end + 1]
-            if e["kind"].startswith("energy_") or e["kind"] == "message_sent"
-        ]
-        st.dataframe(rows, hide_index=True)
-        st.caption(
-            "Events accumulate through the selected stage. Headline values describe the completed run."
-        )
-    with ledger:
+    with st.expander("Trade ledger & household results"):
+        st.write(narrative(run))
         st.markdown("**Trade ledger**")
         st.caption(
             "Midpoint pricing, partial fills and commitment-order meter allocation are synthetic research assumptions, not confirmed Tata market rules."
@@ -285,7 +229,7 @@ def render_results(run):
         st.markdown("**Seller revenue**")
         st.dataframe(run["metrics"]["sellers"], hide_index=True)
         st.caption("Revenue is INR; seller export opportunity cost is not modeled.")
-    with evidence:
+    with st.expander("Evidence & downloads"):
         st.dataframe(
             [
                 {"Check": s["name"], "Status": s["status"]}
@@ -296,6 +240,19 @@ def render_results(run):
         st.caption(
             "Evidence verifies synthetic execution and replay. Privacy redaction is marked not_tested; these checks do not establish production or regulatory validity."
         )
+        with st.expander("Full event trace"):
+            st.dataframe(
+                [
+                    {
+                        "Time": e["at"],
+                        "Agent": e["observer"],
+                        "Event": e["kind"],
+                        "Details": json.dumps(e["detail"]),
+                    }
+                    for e in run["events"]
+                ],
+                hide_index=True,
+            )
         with st.expander("Exact inputs for this result"):
             st.json(run["inputs"])
         public = {k: v for k, v in run.items() if k != "artifacts"}
@@ -343,44 +300,17 @@ def render_results(run):
 
 def main():
     st.set_page_config(page_title="Energy exchange lab", page_icon="☀️", layout="wide")
-    st.caption("MIT × TATA POWER · PROPOSED CONSUMER-AGENT RESEARCH")
-    st.title("What should a household promise to trade?")
-    st.markdown(
-        "**A forecast is a prediction. A commitment is a promise. A meter reading determines what can be settled.**"
-    )
-    st.write(
-        "Explore six synthetic households: three offer spare solar energy and three want to buy it. Change their preferences or forecasts, run the agents, and see what gets agreed and paid."
-    )
-    st.info(
-        "Research question: How can customer agents respect individual preferences, make decisions under uncertainty, and coordinate with utility constraints? This lab demonstrates the workflow with deterministic rules. No LLM is used, and smarter policies have not yet been compared."
-    )
-    for col, title, body in zip(
-        st.columns(3),
-        [
-            "01 · Households decide",
-            "02 · The market checks",
-            "03 · Meters determine payment",
-        ],
-        [
-            "Sellers keep a reserve and set a minimum price. Buyers set demand, a price ceiling and a budget.",
-            "Compatible offers match. A utility trading cap limits commitments, and buyers reserve payment.",
-            "Readings arrive after commitment. Payment follows measured quantities; missing readings can leave trades pending or cancel them.",
-        ],
-    ):
-        col.markdown(f"**{title}**")
-        col.write(body)
-    st.caption(
-        "One synthetic trading interval · Energy in kWh (one unit) · Currency in INR · Aggregate trading cap, not a power-flow model · No live Tata data or production integration"
-    )
+    st.title("Energy exchange lab")
+    st.write("Six households. One market. Watch offers become meter-supported trades.")
+    st.caption("Synthetic research demo · No LLM · kWh / INR")
     if "S1_forecast_surplus" not in st.session_state:
         load_preset()
-    payload = controls()
+    with st.sidebar:
+        payload = controls()
     latest = st.session_state.get("latest")
     if latest and payload != latest["inputs"]:
-        st.warning(
-            "You have unrun changes. The results below still belong to the previous inputs. Select Run simulation to update them."
-        )
-    if st.button("Run simulation", type="primary"):
+        st.warning("You have unrun changes. Run simulation to update this replay.")
+    if st.sidebar.button("Run simulation", type="primary", use_container_width=True):
         try:
             with st.spinner("Running Nandatown and verifying evidence…"):
                 result = gate().run(payload)
@@ -408,13 +338,15 @@ def main():
     if latest:
         render_results(latest)
     else:
-        st.info(
-            "Choose a scenario or edit the controls, then select Run simulation to generate your first result."
-        )
-    with st.expander("Research context and limits"):
+        st.iframe(network_html(), height="content", alt="Energy network replay")
+        st.caption("Choose a scenario in the sidebar and select Run simulation.")
+    with st.expander("About this research"):
         st.write(
-            "This prototype explores a proposed consumer-agent research direction. It demonstrates Observe → Propose → Validate → Commit → Meter → Settle using Nandatown. It does not claim policy superiority, production settlement, network feasibility, real device control, or dedicated physical electricity flow between households. Policy comparisons are the next scientific milestone."
+            "Proposed MIT × Tata Power consumer-agent research: how can households respect preferences and coordinate under uncertainty? This demo uses deterministic offers and midpoint matching, without iterative price bargaining."
         )
-    st.caption(
-        "Each simulation runs in an isolated temporary worker. Temporary files and signing keys are deleted afterward. Results remain in your Streamlit session; download them to keep a copy. No account or LLM API key is needed to run this synthetic demo."
-    )
+        st.write(
+            "Forecast ≠ commitment ≠ measured delivery. The utility cap is an aggregate trading limit, not electrical network feasibility. No live Tata data, production integration, or policy-superiority claim."
+        )
+        st.caption(
+            "Meter outcomes are hidden from agents until commitment. Missing readings can leave trades pending or cancel them. Runs use temporary server files; download results to keep a copy."
+        )
